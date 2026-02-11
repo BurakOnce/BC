@@ -1,0 +1,45 @@
+trigger:
+  branches:
+    include:
+      - develop
+      - feature/*
+      - hotfix/*
+      - release/*
+
+pr:
+  branches:
+    include:
+      - develop
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  appProject: 'Source'
+  artifactName: 'SignatureAppBuild'
+
+steps:
+- task: PowerShell@2
+  displayName: 'Install AL Compiler'
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Host "Installing AL Compiler..."
+      npm install -g @microsoft/alc
+      Write-Host "AL Compiler installed."
+
+- task: PowerShell@2
+  displayName: 'Build AL Project'
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Host "Starting AL build..."
+      alc.exe /project:$(appProject) /packagecachepath:.alcache /out:$(Build.ArtifactStagingDirectory)/BOSignatureApp.app
+      Write-Host "AL build completed."
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish build artifact'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: '$(artifactName)'
+    publishLocation: 'Container'
